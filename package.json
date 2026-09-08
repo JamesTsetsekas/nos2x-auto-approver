@@ -1,6 +1,6 @@
 {
   "name": "nos2x-auto-approver",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Developer-focused nos2x fork with configurable unattended approvals",
   "private": true,
   "license": "WTFPL",

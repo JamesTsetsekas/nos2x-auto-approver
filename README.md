@@ -14,7 +14,7 @@ Browser automation and agentic test runs stall when every NIP-07 operation requi
 - a separate, deliberately alarming all-sites switch;
 - ordinary nos2x prompts on every host outside the automatic allowlist.
 
-The default allowlist covers local development and Conduit's current production and Cloudflare Pages test surfaces. Edit or replace it in the extension's options.
+The built-in allowlist covers local development and Conduit's current production and Cloudflare Pages test surfaces. It can be extended from the extension's options or changed in source for repeatable team builds.
 
 ## Install a release ZIP
 
@@ -33,17 +33,22 @@ Do not load this extension in a personal browsing profile.
 
 ## Configure automatic approvals
 
-Open the extension options and edit **approved host patterns**.
+Open the extension options to see the complete effective policy. Approved hosts are grouped by where they came from:
+
+- **Built-in hosts** are version-controlled in [`extension/approved-hosts.mjs`](extension/approved-hosts.mjs). They remain visible in the UI and may be enabled or disabled per browser profile. Edit that file, run `bun run build`, and reload the extension to change the baseline for a repeatable team build.
+- **Custom hosts** are stored in the current Chrome profile. Paste a hostname or full URL into the options page, select **add host**, then **save automatic approvals**. Custom entries can be removed from the same list.
+
+Enabled built-in and custom hosts are combined. The options page displays every entry, labels its source, and makes profile-specific overrides obvious.
 
 - `localhost` matches localhost on any port.
 - `*.localhost` matches localhost subdomains.
 - `shop.example.test` matches only that host.
 - `*.preview.example.test` matches the apex and its subdomains.
 - Full URLs may be pasted, but schemes, ports, paths, and trailing dots are intentionally ignored because NIP-07 permissions apply to the host.
-- A line beginning with `#` is a comment.
+- JavaScript comments may be used in the built-in host file to document team policy.
 - A bare `*` is rejected. Use the separate **auto-approve every website** switch when a disposable environment truly requires it.
 
-The all-sites switch is off by default. Turning off unattended approvals restores ordinary nos2x permission behavior everywhere.
+The all-sites switch is off by default. **Restore safe defaults** clears profile-specific custom hosts, disables all-sites mode, and re-enables the complete built-in allowlist. Turning off unattended approvals restores ordinary nos2x permission behavior everywhere.
 
 ## Supported NIP-07 operations
 
@@ -68,8 +73,8 @@ bun run check
 `bun run check` lints, tests, builds the extension, and creates:
 
 ```text
-dist/nos2x-auto-approver-v0.1.0.zip
-dist/nos2x-auto-approver-v0.1.0.zip.sha256
+dist/nos2x-auto-approver-v0.2.0.zip
+dist/nos2x-auto-approver-v0.2.0.zip.sha256
 ```
 
 For local development, run `bun run build`, then load this repository's `extension/` directory unpacked. After every rebuild, click **Reload** for the extension and refresh open test pages; Chrome caches extension workers and content scripts.
@@ -79,8 +84,8 @@ For local development, run `bun run build`, then load this repository's `extensi
 The release workflow runs on a version tag, verifies that the tag matches both `package.json` and `extension/manifest.json`, reruns the full check, and attaches the ZIP and checksum to a GitHub Release.
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 Locally generated `.crx` and `.pem` files are ignored. The signing key for a CRX must never be committed, and Chrome restricts self-hosted CRX installation on Windows and macOS. A future Chrome Web Store listing can use the same release ZIP as its upload source.

@@ -1,26 +1,22 @@
+import {BUILT_IN_AUTO_APPROVE_HOST_PATTERNS} from './approved-hosts.mjs'
+
 export const AUTO_APPROVE_STORAGE_KEYS = {
   enabled: 'auto_approve_enabled',
   allHosts: 'auto_approve_all_hosts',
+  disabledBuiltInHostPatterns: 'auto_approve_disabled_built_in_host_patterns',
   hostPatterns: 'auto_approve_host_patterns'
 }
 
-export const DEFAULT_AUTO_APPROVE_HOST_PATTERNS = Object.freeze([
-  'localhost',
-  '*.localhost',
-  '127.0.0.1',
-  '[::1]',
-  '0.0.0.0',
-  'shop.conduit.market',
-  'sell.conduit.market',
-  'build.conduit.market',
-  '*.conduit-market-coo.pages.dev',
-  '*.conduit-merchant-33n.pages.dev'
-])
+export const DEFAULT_AUTO_APPROVE_HOST_PATTERNS =
+  BUILT_IN_AUTO_APPROVE_HOST_PATTERNS
 
 export const DEFAULT_AUTO_APPROVE_SETTINGS = Object.freeze({
   enabled: true,
   allHosts: false,
-  hostPatterns: DEFAULT_AUTO_APPROVE_HOST_PATTERNS
+  disabledBuiltInHostPatterns: Object.freeze([]),
+  builtInHostPatterns: BUILT_IN_AUTO_APPROVE_HOST_PATTERNS,
+  customHostPatterns: Object.freeze([]),
+  hostPatterns: BUILT_IN_AUTO_APPROVE_HOST_PATTERNS
 })
 
 function removeTrailingDot(hostname) {
@@ -83,7 +79,22 @@ export function parseHostPatterns(value) {
 
 export function resolveAutoApproveSettings(stored = {}) {
   const keys = AUTO_APPROVE_STORAGE_KEYS
-  const hasStoredPatterns = Array.isArray(stored[keys.hostPatterns])
+  const storedHostPatterns = Array.isArray(stored[keys.hostPatterns])
+    ? parseHostPatterns(stored[keys.hostPatterns]).hostPatterns
+    : []
+  const disabledBuiltInHostPatterns = Array.isArray(
+    stored[keys.disabledBuiltInHostPatterns]
+  )
+    ? parseHostPatterns(stored[keys.disabledBuiltInHostPatterns]).hostPatterns.filter(
+        pattern => BUILT_IN_AUTO_APPROVE_HOST_PATTERNS.includes(pattern)
+      )
+    : []
+  const builtInHostPatterns = BUILT_IN_AUTO_APPROVE_HOST_PATTERNS.filter(
+    pattern => !disabledBuiltInHostPatterns.includes(pattern)
+  )
+  const customHostPatterns = storedHostPatterns.filter(
+    pattern => !BUILT_IN_AUTO_APPROVE_HOST_PATTERNS.includes(pattern)
+  )
 
   return {
     enabled:
@@ -94,9 +105,10 @@ export function resolveAutoApproveSettings(stored = {}) {
       typeof stored[keys.allHosts] === 'boolean'
         ? stored[keys.allHosts]
         : DEFAULT_AUTO_APPROVE_SETTINGS.allHosts,
-    hostPatterns: hasStoredPatterns
-      ? parseHostPatterns(stored[keys.hostPatterns]).hostPatterns
-      : [...DEFAULT_AUTO_APPROVE_HOST_PATTERNS]
+    disabledBuiltInHostPatterns,
+    builtInHostPatterns,
+    customHostPatterns,
+    hostPatterns: [...builtInHostPatterns, ...customHostPatterns]
   }
 }
 

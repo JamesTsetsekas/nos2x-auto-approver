@@ -10,8 +10,10 @@ import {
   hostMatchesPattern,
   normalizeHostPattern,
   parseHostPatterns,
+  resolveAutoApproveSettings,
   shouldAutoApproveHost
 } from '../extension/auto-approvals.mjs'
+import {BUILT_IN_AUTO_APPROVE_HOST_PATTERNS} from '../extension/approved-hosts.mjs'
 
 test('defaults auto-approve Conduit local, preview, and production hosts', () => {
   const approved = [
@@ -51,7 +53,7 @@ test('defaults reject lookalikes and unrelated sites', () => {
   }
 })
 
-test('custom host patterns replace defaults and ignore URL details', () => {
+test('custom host patterns extend built-ins and ignore URL details', () => {
   const keys = AUTO_APPROVE_STORAGE_KEYS
   const stored = {
     [keys.enabled]: true,
@@ -65,8 +67,53 @@ test('custom host patterns replace defaults and ignore URL details', () => {
   assert.equal(shouldAutoApproveHost('agent.example.test:3000', stored), true)
   assert.equal(shouldAutoApproveHost('preview.example.test', stored), true)
   assert.equal(shouldAutoApproveHost('pr-42.preview.example.test', stored), true)
-  assert.equal(shouldAutoApproveHost('shop.conduit.market', stored), false)
+  assert.equal(shouldAutoApproveHost('shop.conduit.market', stored), true)
   assert.equal(shouldAutoApproveHost('notpreview.example.test', stored), false)
+
+  const settings = resolveAutoApproveSettings(stored)
+  assert.deepEqual(settings.customHostPatterns, [
+    'agent.example.test',
+    '*.preview.example.test'
+  ])
+  assert.deepEqual(
+    settings.hostPatterns,
+    [...BUILT_IN_AUTO_APPROVE_HOST_PATTERNS, ...settings.customHostPatterns]
+  )
+})
+
+test('stored copies of built-in hosts are deduplicated from custom hosts', () => {
+  const keys = AUTO_APPROVE_STORAGE_KEYS
+  const settings = resolveAutoApproveSettings({
+    [keys.hostPatterns]: [
+      'localhost',
+      'https://shop.conduit.market/products',
+      'qa.example.test'
+    ]
+  })
+
+  assert.deepEqual(settings.customHostPatterns, ['qa.example.test'])
+  assert.equal(
+    settings.hostPatterns.filter(pattern => pattern === 'localhost').length,
+    1
+  )
+})
+
+test('built-in hosts can be disabled per browser profile', () => {
+  const keys = AUTO_APPROVE_STORAGE_KEYS
+  const stored = {
+    [keys.disabledBuiltInHostPatterns]: [
+      'https://shop.conduit.market/products',
+      'not-a-built-in.example'
+    ]
+  }
+  const settings = resolveAutoApproveSettings(stored)
+
+  assert.deepEqual(settings.disabledBuiltInHostPatterns, [
+    'shop.conduit.market'
+  ])
+  assert.equal(settings.builtInHostPatterns.includes('shop.conduit.market'), false)
+  assert.equal(shouldAutoApproveHost('shop.conduit.market', stored), false)
+  assert.equal(shouldAutoApproveHost('sell.conduit.market', stored), true)
 })
 
 test('disabled mode wins and all-hosts mode requires enabled mode', () => {
@@ -133,9 +180,13 @@ test('package, manifest, and nos2x crypto versions stay release-safe', async () 
   assert.equal(packageJson.dependencies, undefined)
   assert.equal(packageJson.devDependencies['nostr-tools'], '2.12.0')
   assert.equal(packageJson.version, manifest.version)
-  assert.equal(packageJson.version, '0.1.0')
+  assert.equal(packageJson.version, '0.2.0')
   assert.deepEqual(
     DEFAULT_AUTO_APPROVE_HOST_PATTERNS.filter(pattern => pattern === '*'),
     []
+  )
+  assert.equal(
+    DEFAULT_AUTO_APPROVE_HOST_PATTERNS,
+    BUILT_IN_AUTO_APPROVE_HOST_PATTERNS
   )
 })
