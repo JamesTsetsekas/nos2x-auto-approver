@@ -1,8 +1,7 @@
 {
-  "name": "nos2x",
-  "description": "Nostr Signer Extension",
-  "version": "2.5.2",
-  "homepage_url": "https://github.com/fiatjaf/nos2x",
+  "name": "nos2x Auto Approver",
+  "description": "Developer-focused nos2x fork with configurable unattended approvals",
+  "version": "0.1.0",
   "manifest_version": 3,
   "icons": {
     "16": "icons/16x16.png",
@@ -15,7 +14,7 @@
     "service_worker": "background.build.js"
   },
   "action": {
-    "default_title": "nos2x",
+    "default_title": "nos2x Auto Approver — test keys only",
     "default_popup": "popup.html"
   },
   "content_scripts": [
@@ -35,10 +34,7 @@
       "resources": ["nostr-provider.js"],
       "matches": [
         "https://*/*",
-        "http://localhost:*/*",
-        "http://0.0.0.0:*/*",
-        "http://127.0.0.1:*/*",
-        "http://*.localhost/*"
+        "http://*/*"
       ]
     }
   ]

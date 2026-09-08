@@ -1,0 +1,3 @@
+dist/
+extension/*.build.js
+node_modules/

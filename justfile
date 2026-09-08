@@ -1,8 +1,11 @@
 build:
-  ./build.js prod
+  bun run build
+
+check:
+  bun run check
 
 watch:
   ag -l --js | entr ./build.js
 
 package: build
-  cd extension; zip -r archive *; cd ..; mv extension/archive.zip ./nos2x.zip
+  bun run package

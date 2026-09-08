@@ -1,4 +1,8 @@
 import browser from 'webextension-polyfill'
+import {
+  AUTO_APPROVE_STORAGE_KEYS,
+  shouldAutoApproveHost
+} from './auto-approvals.mjs'
 
 export const NO_PERMISSIONS_REQUIRED = {
   replaceURL: true,
@@ -24,6 +28,11 @@ function matchConditions(conditions, event) {
 }
 
 export async function getPermissionStatus(host, type, event) {
+  const autoApproveSettings = await browser.storage.local.get(
+    Object.values(AUTO_APPROVE_STORAGE_KEYS)
+  )
+  if (shouldAutoApproveHost(host, autoApproveSettings)) return true
+
   let {policies} = await browser.storage.local.get('policies')
 
   let answers = [true, false]

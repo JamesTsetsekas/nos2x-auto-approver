@@ -1,4 +1,7 @@
 node_modules
+dist
 *.build.js
 *.build.css
 *.zip
+*.crx
+*.pem

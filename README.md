@@ -1,52 +1,92 @@
-# nos2x
+# nos2x Auto Approver
 
-### notes and other stuff signed by an extension
+A Chromium-only [nos2x](https://github.com/fiatjaf/nos2x) fork for automated Nostr development and QA. It keeps the normal nos2x NIP-07 implementation and adds configurable hosts that may use the signer without opening an approval popup.
 
-## Nostr Signer Extension
+> [!CAUTION]
+> Use a dedicated disposable test identity only. A silently approved website can read that identity, sign arbitrary Nostr events, and request encryption or decryption. Never import a personal, treasury, production merchant, or otherwise valuable key.
 
-Use this to sign [Nostr](https://github.com/nostr-protocol/nostr) events on web-apps without having to give them your keys.
+## Why this exists
 
-It implements [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md), i.e. provides a `window.nostr` object which has the following methods:
+Browser automation and agentic test runs stall when every NIP-07 operation requires a person to approve a popup. This fork supports unattended flows while keeping the exception narrow and visible:
 
-```
-async window.nostr.getPublicKey(): string // returns your public key as hex
-async window.nostr.signEvent(event): Event // returns the full event object signed
-async window.nostr.nip04.encrypt(pubkey, plaintext): string // returns ciphertext+iv as specified in nip04
-async window.nostr.nip04.decrypt(pubkey, ciphertext): string // takes ciphertext+iv as specified in nip04
-async window.nostr.nip44.encrypt(pubkey, plaintext): string // takes pubkey, plaintext, returns ciphertext as specified in nip-44
-async window.nostr.nip44.decrypt(pubkey, ciphertext): string // takes pubkey, ciphertext, returns plaintext as specified in nip-44
-```
+- exact host allowlists;
+- wildcard subdomains such as `*.preview.example.test`;
+- a separate, deliberately alarming all-sites switch;
+- ordinary nos2x prompts on every host outside the automatic allowlist.
 
-This extension is Chromium-only. For a maintained Firefox fork, see [nos2x-fox](https://diegogurpegui.com/nos2x-fox/).
+The default allowlist covers local development and Conduit's current production and Cloudflare Pages test surfaces. Edit or replace it in the extension's options.
 
-## Demo Video
+## Install a release ZIP
 
-https://user-images.githubusercontent.com/1653275/149637382-65d50a85-fe30-4259-b7de-99c88b089b53.mp4
+Chrome on Windows and macOS does not normally install a self-hosted CRX. Releases therefore contain a ZIP intended for trusted developer-mode installation, following [Chrome's supported unpacked-extension workflow](https://developer.chrome.com/docs/extensions/how-to/distribute).
 
-## Install
+1. Download the release ZIP and verify its adjacent `.sha256` file.
+2. Extract the ZIP to a durable directory.
+3. Open `chrome://extensions` in the dedicated QA browser profile.
+4. Enable **Developer mode**.
+5. Disable other NIP-07 signers in that profile so providers do not compete.
+6. Select **Load unpacked** and choose the extracted directory containing `manifest.json`.
+7. Open the extension options, generate or import a disposable test key, and review the automatic approval settings.
+8. Reload any test pages that were already open.
 
-- [Chrome Extension](https://chrome.google.com/webstore/detail/nos2x/kpgefcfmnafjgpblomihpgmejjdanjjp)
+Do not load this extension in a personal browsing profile.
+
+## Configure automatic approvals
+
+Open the extension options and edit **approved host patterns**.
+
+- `localhost` matches localhost on any port.
+- `*.localhost` matches localhost subdomains.
+- `shop.example.test` matches only that host.
+- `*.preview.example.test` matches the apex and its subdomains.
+- Full URLs may be pasted, but schemes, ports, paths, and trailing dots are intentionally ignored because NIP-07 permissions apply to the host.
+- A line beginning with `#` is a comment.
+- A bare `*` is rejected. Use the separate **auto-approve every website** switch when a disposable environment truly requires it.
+
+The all-sites switch is off by default. Turning off unattended approvals restores ordinary nos2x permission behavior everywhere.
+
+## Supported NIP-07 operations
+
+The signer preserves nos2x support for:
+
+- `window.nostr.getPublicKey()`;
+- `window.nostr.signEvent(event)`;
+- NIP-04 encryption and decryption;
+- NIP-44 encryption and decryption.
+
+An allowed host receives automatic approval for all supported operations. Per-operation unattended permissions are intentionally not offered in the first release; a short, auditable host policy is easier to reason about.
 
 ## Develop
 
-To run the plugin from this code:
+Requirements: Bun and a Chromium browser.
 
-```
-git clone https://github.com/fiatjaf/nos2x
-cd nos2x
-yarn
-./build.js prod
+```sh
+bun ci
+bun run check
 ```
 
-then
+`bun run check` lints, tests, builds the extension, and creates:
 
-1. go to `chrome://extensions`;
-2. ensure "developer mode" is enabled on the top right;
-3. click on "Load unpackaged";
-4. select the `extension/` folder of this repository.
+```text
+dist/nos2x-auto-approver-v0.1.0.zip
+dist/nos2x-auto-approver-v0.1.0.zip.sha256
+```
 
----
+For local development, run `bun run build`, then load this repository's `extension/` directory unpacked. After every rebuild, click **Reload** for the extension and refresh open test pages; Chrome caches extension workers and content scripts.
 
-LICENSE: public domain.
+## Releases
 
-Icon made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>.
+The release workflow runs on a version tag, verifies that the tag matches both `package.json` and `extension/manifest.json`, reruns the full check, and attaches the ZIP and checksum to a GitHub Release.
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Locally generated `.crx` and `.pem` files are ignored. The signing key for a CRX must never be committed, and Chrome restricts self-hosted CRX installation on Windows and macOS. A future Chrome Web Store listing can use the same release ZIP as its upload source.
+
+## Upstream and license
+
+This project is based on [fiatjaf/nos2x](https://github.com/fiatjaf/nos2x) and retains its public-domain/WTFPL license. The `upstream` Git remote tracks nos2x for focused compatibility updates.
+
+The original icon was made by [Freepik](https://www.freepik.com/) from [Flaticon](https://www.flaticon.com/).

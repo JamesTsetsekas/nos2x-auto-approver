@@ -8,6 +8,7 @@ import {createRoot} from 'react-dom/client'
 import QRCode from 'react-qr-code'
 import browser from 'webextension-polyfill'
 import {removePermissions} from './common'
+import AutoApproveSettings from './auto-approve-settings'
 
 function Options() {
   let [unsavedChanges, setUnsavedChanges] = useState([])
@@ -85,7 +86,8 @@ function Options() {
   return (
     <>
       <h1 style={{fontSize: '25px', marginBlockEnd: '0px'}}>nos2x</h1>
-      <p style={{marginBlockStart: '0px'}}>nostr signer extension</p>
+      <p style={{marginBlockStart: '0px'}}>automatic Nostr test signer</p>
+      <AutoApproveSettings />
       <h2 style={{marginBlockStart: '20px', marginBlockEnd: '5px'}}>options</h2>
       <div
         style={{
