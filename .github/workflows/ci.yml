@@ -22,7 +22,7 @@ jobs:
       - name: Lint, test, build, and package
         run: bun run check
       - name: Upload packaged extension
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           if-no-files-found: error
           name: nos2x-auto-approver
