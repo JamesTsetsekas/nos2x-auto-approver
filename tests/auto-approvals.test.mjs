@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 import test from 'node:test'
 
-import {finalizeEvent, getPublicKey} from 'nostr-tools/pure'
+import {finalizeEvent, generateSecretKey, getPublicKey} from 'nostr-tools/pure'
 
 import {
   AUTO_APPROVE_STORAGE_KEYS,
@@ -66,7 +66,10 @@ test('custom host patterns extend built-ins and ignore URL details', () => {
 
   assert.equal(shouldAutoApproveHost('agent.example.test:3000', stored), true)
   assert.equal(shouldAutoApproveHost('preview.example.test', stored), true)
-  assert.equal(shouldAutoApproveHost('pr-42.preview.example.test', stored), true)
+  assert.equal(
+    shouldAutoApproveHost('pr-42.preview.example.test', stored),
+    true
+  )
   assert.equal(shouldAutoApproveHost('shop.conduit.market', stored), true)
   assert.equal(shouldAutoApproveHost('notpreview.example.test', stored), false)
 
@@ -75,10 +78,10 @@ test('custom host patterns extend built-ins and ignore URL details', () => {
     'agent.example.test',
     '*.preview.example.test'
   ])
-  assert.deepEqual(
-    settings.hostPatterns,
-    [...BUILT_IN_AUTO_APPROVE_HOST_PATTERNS, ...settings.customHostPatterns]
-  )
+  assert.deepEqual(settings.hostPatterns, [
+    ...BUILT_IN_AUTO_APPROVE_HOST_PATTERNS,
+    ...settings.customHostPatterns
+  ])
 })
 
 test('stored copies of built-in hosts are deduplicated from custom hosts', () => {
@@ -111,7 +114,10 @@ test('built-in hosts can be disabled per browser profile', () => {
   assert.deepEqual(settings.disabledBuiltInHostPatterns, [
     'shop.conduit.market'
   ])
-  assert.equal(settings.builtInHostPatterns.includes('shop.conduit.market'), false)
+  assert.equal(
+    settings.builtInHostPatterns.includes('shop.conduit.market'),
+    false
+  )
   assert.equal(shouldAutoApproveHost('shop.conduit.market', stored), false)
   assert.equal(shouldAutoApproveHost('sell.conduit.market', stored), true)
 })
@@ -148,25 +154,26 @@ test('patterns normalize safely and a bare wildcard is rejected', () => {
     *.preview.example.test
     *
   `)
-  assert.deepEqual(parsed.hostPatterns, [
-    'localhost',
-    '*.preview.example.test'
-  ])
+  assert.deepEqual(parsed.hostPatterns, ['localhost', '*.preview.example.test'])
   assert.deepEqual(parsed.invalidPatterns, ['*'])
 })
 
-test('the pinned nos2x crypto accepts its stored hex-key representation', () => {
-  const storedHexKey = '01'.repeat(32)
-  const publicKey = getPublicKey(storedHexKey)
+test('stored hex keys retain identity when normalized for byte APIs', () => {
+  const key = generateSecretKey()
+  const storedHexKey = Buffer.from(key).toString('hex')
+  const normalized = Uint8Array.from(Buffer.from(storedHexKey, 'hex'))
+  const publicKey = getPublicKey(normalized)
   const signed = finalizeEvent(
     {kind: 1, created_at: 1, tags: [], content: 'test fixture'},
-    storedHexKey
+    normalized
   )
 
   assert.match(publicKey, /^[0-9a-f]{64}$/)
   assert.equal(signed.pubkey, publicKey)
   assert.match(signed.id, /^[0-9a-f]{64}$/)
   assert.match(signed.sig, /^[0-9a-f]{128}$/)
+  assert.equal(publicKey === getPublicKey(key), true)
+  assert.equal(Buffer.from(normalized).toString('hex') === storedHexKey, true)
 })
 
 test('package, manifest, and nos2x crypto versions stay release-safe', async () => {
@@ -174,11 +181,14 @@ test('package, manifest, and nos2x crypto versions stay release-safe', async () 
     await readFile(new URL('../package.json', import.meta.url), 'utf8')
   )
   const manifest = JSON.parse(
-    await readFile(new URL('../extension/manifest.json', import.meta.url), 'utf8')
+    await readFile(
+      new URL('../extension/manifest.json', import.meta.url),
+      'utf8'
+    )
   )
 
   assert.equal(packageJson.dependencies, undefined)
-  assert.equal(packageJson.devDependencies['nostr-tools'], '2.12.0')
+  assert.equal(packageJson.devDependencies['nostr-tools'], '2.25.2')
   assert.equal(packageJson.version, manifest.version)
   assert.equal(packageJson.version, '0.2.0')
   assert.deepEqual(

@@ -3,6 +3,7 @@ import {validateEvent, finalizeEvent, getPublicKey} from 'nostr-tools/pure'
 import * as nip19 from 'nostr-tools/nip19'
 import * as nip04 from 'nostr-tools/nip04'
 import * as nip44 from 'nostr-tools/nip44'
+import {hexToBytes} from 'nostr-tools/utils'
 import {Mutex} from 'async-mutex'
 import {LRUCache} from './utils'
 
@@ -195,6 +196,8 @@ async function performOperation(type, params) {
 
   let sk = results.private_key
   try {
+    // Keep storage in nos2x's existing hex format; normalize only for crypto.
+    sk = hexToBytes(sk)
     switch (type) {
       case 'getPublicKey': {
         return getPublicKey(sk)

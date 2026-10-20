@@ -1,5 +1,5 @@
-import {bytesToHex, hexToBytes} from '@noble/hashes/utils'
-import {getPublicKey} from 'nostr-tools'
+import {bytesToHex, hexToBytes} from 'nostr-tools/utils'
+import {getPublicKey} from 'nostr-tools/pure'
 import * as nip19 from 'nostr-tools/nip19'
 import {decrypt, encrypt} from 'nostr-tools/nip49'
 import {generateSecretKey} from 'nostr-tools/pure'
