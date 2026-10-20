@@ -70,7 +70,7 @@ bun ci
 bun run check
 ```
 
-`bun run check` lints, tests, builds the extension, and creates:
+`bun run check` lints, builds the extension, tests that build, and creates:
 
 ```text
 dist/nos2x-auto-approver-v0.2.0.zip
@@ -78,6 +78,28 @@ dist/nos2x-auto-approver-v0.2.0.zip.sha256
 ```
 
 For local development, run `bun run build`, then load this repository's `extension/` directory unpacked. After every rebuild, click **Reload** for the extension and refresh open test pages; Chrome caches extension workers and content scripts.
+
+### Crypto compatibility and test scope
+
+The signer pins `nostr-tools` to `2.25.2` for short and extended NIP-44 v2
+messages. Private keys remain stored in the existing hex format; the background
+and popup convert them to bytes only when calling the crypto APIs. This does not
+migrate keys or change automatic approvals, host settings, or the NIP-07 surface.
+
+Tests use newly generated process-local identities, never installed browser
+storage. They exercise the actual background and popup code, signatures, legacy
+NIP-04, NIP-44 size boundaries, permission denials, and unchanged key storage.
+Composed tests also run the real page provider, content script, and generated
+background with emulated message transport and verify request cleanup. Build
+before running `bun run test` directly; `bun run check` does this automatically.
+These tests do not prove which extension Chrome loaded, the behavior of a
+particular application session, or success of a live recovery operation.
+
+When Chrome already loads this source directory, stage candidate builds in a
+separate checkout first. After approval, replace only the generated assets in the
+existing extension folder, reload that extension entry, and refresh test pages.
+Do not uninstall or load a second extension path to update it: changing extension
+identity can lose access to its existing browser-local keys and permissions.
 
 ## Releases
 

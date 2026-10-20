@@ -1,6 +1,7 @@
 import browser from 'webextension-polyfill'
 import {createRoot} from 'react-dom/client'
 import {getPublicKey} from 'nostr-tools/pure'
+import {hexToBytes} from 'nostr-tools/utils'
 import * as nip19 from 'nostr-tools/nip19'
 import React, {useState, useRef, useEffect} from 'react'
 import QRCode from 'react-qr-code'
@@ -13,7 +14,7 @@ function Popup() {
   useEffect(() => {
     browser.storage.local.get(['private_key', 'relays']).then(results => {
       if (results.private_key) {
-        let hexKey = getPublicKey(results.private_key)
+        let hexKey = getPublicKey(hexToBytes(results.private_key))
         let npubKey = nip19.npubEncode(hexKey)
 
         setPubKey(npubKey)
